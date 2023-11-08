@@ -225,6 +225,172 @@ SinkCombineResultType PhysicalHashJoin::Combine(ExecutionContext &context, Opera
 	return SinkCombineResultType::FINISHED;
 }
 
+string PhysicalHashJoin::GetSubstraitInfo(unordered_map<ExpressionType, idx_t>& func_map, idx_t& func_num, duckdb::idx_t depth) const {
+        string join_str = AssignBlank(depth) + "\"hashJoin\": {\n";
+
+        string left_str = AssignBlank(++depth) + "\"left\": {\n";
+        string right_str = AssignBlank(depth) + "\"right\": {\n";
+
+        left_str += children[0]->GetSubstraitInfo(func_map, func_num, depth + 1) + AssignBlank(depth) + "},\n";
+        right_str += children[1]->GetSubstraitInfo(func_map, func_num, depth + 1) + AssignBlank(depth) + "},\n";
+
+        string type_str = AssignBlank(depth) + "\"type\": ";
+        type_str += "\"" + JoinTypeToString(this->join_type) + "\",\n";
+
+        string common_str = AssignBlank(depth) + "\"common\": {\n";
+        string emit_str = AssignBlank(++depth) + "\"emit\": {\n";
+        string output_mapping_str = AssignBlank(++depth) + "\"outputMapping\": ";
+
+        string select_right_str = "[\n";
+
+        ++depth;
+
+        for (int i = 0; i < right_projection_map.size(); ++i) {
+            select_right_str += AssignBlank(depth) + to_string(right_projection_map[i]);
+            if (i != right_projection_map.size() - 1) {
+                select_right_str += ",\n";
+            }
+            else {
+                select_right_str += "\n";
+            }
+        }
+        select_right_str += AssignBlank(--depth) + "]";
+        output_mapping_str += select_right_str + "\n";
+        emit_str += output_mapping_str + AssignBlank(--depth) + "}\n";
+        common_str += emit_str + AssignBlank(--depth) + "},\n";
+
+        string condition_str = "";
+        string left_condition_str = AssignBlank(depth) + "\"leftKeys\": [\n";
+        string right_condition_str = AssignBlank(depth) + "\"rightKeys\": [\n";
+
+        ++depth;
+
+        for (int i = 0; i < conditions.size(); ++i) {
+            BoundReferenceExpression* lexp = (BoundReferenceExpression*) conditions[i].left.get();
+            BoundReferenceExpression* rexp = (BoundReferenceExpression*) conditions[i].right.get();
+
+            left_condition_str += AssignBlank(depth) + "{\n";
+            left_condition_str += AssignBlank(++depth) + "\"directReference\": {\n";
+            left_condition_str += AssignBlank(++depth) + "\"structField\": {\n";
+            left_condition_str += AssignBlank(++depth) + "\"field\": " + to_string(lexp->index) + "\n";
+            left_condition_str += AssignBlank(--depth) + "}\n";
+            left_condition_str += AssignBlank(--depth) + "}\n";
+            left_condition_str += AssignBlank(--depth) + "}";
+
+            right_condition_str += AssignBlank(depth) + "{\n";
+            right_condition_str += AssignBlank(++depth) + "\"directReference\": {\n";
+            right_condition_str += AssignBlank(++depth) + "\"structField\": {\n";
+            right_condition_str += AssignBlank(++depth) + "\"field\": " + to_string(rexp->index) + "\n";
+            right_condition_str += AssignBlank(--depth) + "}\n";
+            right_condition_str += AssignBlank(--depth) + "}\n";
+            right_condition_str += AssignBlank(--depth) + "}";
+
+            if (i != conditions.size() - 1) {
+                left_condition_str += ",\n";
+                right_condition_str += ",\n";
+            }
+            else {
+                left_condition_str += "\n";
+                right_condition_str += "\n";
+            }
+        }
+
+        --depth;
+
+        left_condition_str += AssignBlank(depth) + "],\n";
+        right_condition_str += AssignBlank(depth) + "],\n";
+
+        condition_str += left_condition_str + right_condition_str;
+
+        join_str += left_str + right_str + type_str + common_str + condition_str + AssignBlank(--depth) + "}\n";
+
+        return join_str;
+    }
+
+substrait::Rel* PhysicalHashJoin::ToSubstraitClass(unordered_map<int, string>& tableid2name) const {
+        substrait::Rel* hash_join_rel = new substrait::Rel();
+        substrait::HashJoinRel* hash_join = new substrait::HashJoinRel();
+
+        hash_join->set_allocated_left(children[0]->ToSubstraitClass(tableid2name));
+        hash_join->set_allocated_right(children[1]->ToSubstraitClass(tableid2name));
+
+        substrait::RelCommon* common = new substrait::RelCommon();
+        substrait::RelCommon_Emit* emit = new substrait::RelCommon_Emit();
+
+        for (int i = 0; i < right_projection_map.size(); ++i) {
+            emit->add_output_mapping(right_projection_map[i]);
+        }
+
+        common->set_allocated_emit(emit);
+        hash_join->set_allocated_common(common);
+
+        if (this->join_type == JoinType::INNER)
+            hash_join->set_type(substrait::HashJoinRel_JoinType_JOIN_TYPE_INNER);
+
+        for (int i = 0; i < conditions.size(); ++i) {
+            BoundReferenceExpression* lexp = (BoundReferenceExpression*) conditions[i].left.get();
+            BoundReferenceExpression* rexp = (BoundReferenceExpression*) conditions[i].right.get();
+
+            substrait::Expression_FieldReference* field_reference_left = new substrait::Expression_FieldReference();
+            substrait::Expression_ReferenceSegment* direct_reference_left = new substrait::Expression_ReferenceSegment();
+            substrait::Expression_ReferenceSegment_MapKey* map_key_variable_left = new substrait::Expression_ReferenceSegment_MapKey();
+            substrait::Expression_Literal* variable_name_left = new substrait::Expression_Literal();
+            substrait::Expression_ReferenceSegment* child_variable_type_left = new substrait::Expression_ReferenceSegment();
+            substrait::Expression_ReferenceSegment_MapKey* map_key_type_left = new substrait::Expression_ReferenceSegment_MapKey();
+            substrait::Expression_Literal* type_left = new substrait::Expression_Literal();
+            substrait::Expression_ReferenceSegment* child_variable_index_left = new substrait::Expression_ReferenceSegment();
+            substrait::Expression_ReferenceSegment_StructField* field_variable_index_left = new substrait::Expression_ReferenceSegment_StructField();
+
+            field_variable_index_left->set_field(lexp->index);
+            child_variable_index_left->set_allocated_struct_field(field_variable_index_left);
+            string type_left_str = TypeIdToString(lexp->return_type.InternalType());
+            type_left->set_allocated_string(&type_left_str);
+            map_key_type_left->set_allocated_map_key(type_left);
+            map_key_type_left->set_allocated_child(child_variable_index_left);
+            child_variable_type_left->set_allocated_map_key(map_key_type_left);
+            variable_name_left->set_allocated_string(&lexp->alias);
+            map_key_variable_left->set_allocated_map_key(variable_name_left);
+            map_key_variable_left->set_allocated_child(child_variable_type_left);
+            direct_reference_left->set_allocated_map_key(map_key_variable_left);
+            field_reference_left->set_allocated_direct_reference(direct_reference_left);
+            *hash_join->add_left_keys() = *field_reference_left;
+            // hash_join->mutable_left_keys()->AddAllocated(field_reference_left);
+
+            substrait::Expression_FieldReference* field_reference_right = new substrait::Expression_FieldReference();
+            substrait::Expression_ReferenceSegment* direct_reference_right = new substrait::Expression_ReferenceSegment();
+            substrait::Expression_ReferenceSegment_MapKey* map_key_variable_right = new substrait::Expression_ReferenceSegment_MapKey();
+            substrait::Expression_Literal* variable_name_right = new substrait::Expression_Literal();
+            substrait::Expression_ReferenceSegment* child_variable_type_right = new substrait::Expression_ReferenceSegment();
+            substrait::Expression_ReferenceSegment_MapKey* map_key_type_right = new substrait::Expression_ReferenceSegment_MapKey();
+            substrait::Expression_Literal* type_right = new substrait::Expression_Literal();
+            substrait::Expression_ReferenceSegment* child_variable_index_right = new substrait::Expression_ReferenceSegment();
+            substrait::Expression_ReferenceSegment_StructField* field_variable_index_right = new substrait::Expression_ReferenceSegment_StructField();
+
+            field_variable_index_right->set_field(rexp->index);
+            child_variable_index_right->set_allocated_struct_field(field_variable_index_right);
+            string type_right_str = TypeIdToString(rexp->return_type.InternalType());
+            type_right->set_allocated_string(&type_right_str);
+            map_key_type_right->set_allocated_map_key(type_right);
+            map_key_type_right->set_allocated_child(child_variable_index_right);
+            child_variable_type_right->set_allocated_map_key(map_key_type_right);
+            variable_name_right->set_allocated_string(&rexp->alias);
+            map_key_variable_right->set_allocated_map_key(variable_name_right);
+            map_key_variable_right->set_allocated_child(child_variable_type_right);
+            direct_reference_right->set_allocated_map_key(map_key_variable_right);
+            field_reference_right->set_allocated_direct_reference(direct_reference_right);
+            *hash_join->add_right_keys() = *field_reference_right;
+            // hash_join->mutable_right_keys()->AddAllocated(field_reference_right);
+        }
+
+        for (int i = 0; i < types.size(); ++i)
+            hash_join->add_out_types(TypeIdToString(types[i].InternalType()));
+
+        hash_join_rel->set_allocated_hash_join(hash_join);
+
+        return hash_join_rel;
+    }
+
+
 //===--------------------------------------------------------------------===//
 // Finalize
 //===--------------------------------------------------------------------===//

@@ -40,10 +40,12 @@ unique_ptr<duckdb::PhysicalOperator> PbSerializer::DeSerialize(ClientContext& co
 
 unique_ptr<duckdb::PhysicalOperator> PbSerializer::DeSerializeFromFile(ClientContext& context, std::string& file_name) {
 	ifstream in_file(file_name, ios::out|ios::binary);
+    if (!in_file)
+        cout << "file not found" << endl;
 
 	substrait::Rel* relation_entry = new substrait::Rel();
 	if (!relation_entry->ParseFromIstream(&in_file)) {
-		std::cerr << "Fail to the parse pb file: " + file_name << std::endl;
+		std::cerr << "Fail to parse the pb file: " + file_name << std::endl;
 	}
 
 	unordered_map<std::string, duckdb::TableCatalogEntry *> table_entry;

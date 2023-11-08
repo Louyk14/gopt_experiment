@@ -196,7 +196,7 @@ TEST_CASE("Test ldbc ic5", "[storage][.]") {
 	auto roq = con.Query("SELECT f.title FROM "
 	          "Knows k1, Person p2, HasMember hm, Forum f, ContainerOf cof, Post po, HasCreator hc "
 	          "WHERE p2.id = k1.id2 AND p2.id = hm.personId AND f.id = hm.forumId AND f.id = cof.forumId AND "
-	          "po.id = cof.postId AND po.id = hc.postId AND p2.id = hc.personId AND k1.id1 = \'4398046511628\'");
+	          "po.id = cof.postId AND po.id = hc.postId AND p2.id = hc.personId AND k1.id1 = \'0\'");
 
 	// auto roq = con.Query("SELECT f.title FROM "
 	//                     "Knows k1, Person p2, HasMember hm, Forum f, ContainerOf cof, Post po, HasCreator hc "

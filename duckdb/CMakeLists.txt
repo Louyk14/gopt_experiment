@@ -20,6 +20,10 @@ project(DuckDB)
 
 find_package(Threads REQUIRED)
 
+list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew/opt/protobuf@21/include;/opt/homebrew/opt/protobuf@21/lib")
+find_package(Protobuf REQUIRED)
+include_directories(${Protobuf_INCLUDE_DIRS})
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if (CMAKE_VERSION VERSION_LESS "3.1")

@@ -57,8 +57,9 @@ struct ActiveQueryContext {
 	unique_ptr<ProgressBar> progress_bar;
 };
 
-ClientContext::ClientContext(shared_ptr<DatabaseInstance> database)
-    : db(std::move(database)), interrupted(false), client_data(make_uniq<ClientData>(*this)), transaction(*this) {
+ClientContext::ClientContext(shared_ptr<DatabaseInstance> database, int sql_mode_input, string pb_file_input)
+    : db(std::move(database)), interrupted(false), client_data(make_uniq<ClientData>(*this)), transaction(*this),
+    sql_mode(sql_mode_input), pb_file(pb_file_input){
 }
 
 ClientContext::~ClientContext() {
@@ -352,8 +353,12 @@ ClientContext::CreatePreparedStatement(ClientContextLock &lock, const string &qu
 	auto physical_plan = physical_planner.CreatePlan(std::move(plan));
 	profiler.EndPhase();
 
-	if (query[0] == 's' || query[0] == 'S') {
-		std::cout << physical_plan->ToString() << std::endl;
+    if (sql_mode == 1 && (query[0] == 's' || query[0] == 'S')) {
+		// std::cout << physical_plan->ToString() << std::endl;
+        unordered_map<int, string> tableid2name;
+        planner.binder->bind_context.GetBindingsMap(tableid2name);
+        string pb_file = "output.log";
+        pb_serializer.SerializeToFile(pb_file, physical_plan.get(), tableid2name);
 	}
 #ifdef DEBUG
 	D_ASSERT(!physical_plan->ToString().empty());
@@ -823,6 +828,11 @@ unique_ptr<QueryResult> ClientContext::Query(const string &query, bool allow_str
 		parameters.allow_stream_result = allow_stream_result && is_last_statement;
 		auto pending_query = PendingQueryInternal(*lock, std::move(statement), parameters);
 		auto has_result = pending_query->properties.return_type == StatementReturnType::QUERY_RESULT;
+
+        if (sql_mode == 1) {
+            return result;
+        }
+
 		unique_ptr<QueryResult> current_result;
 		if (pending_query->HasError()) {
 			current_result = make_uniq<MaterializedQueryResult>(pending_query->GetErrorObject());
@@ -1184,6 +1194,11 @@ bool ClientContext::ExecutionIsFinished() {
 		return false;
 	}
 	return active_query->executor->ExecutionIsFinished();
+}
+
+void ClientContext::SetPbParameters(int sql_mode_input, std::string pb_file_input) {
+    sql_mode = sql_mode_input;
+    pb_file = pb_file_input;
 }
 
 } // namespace duckdb

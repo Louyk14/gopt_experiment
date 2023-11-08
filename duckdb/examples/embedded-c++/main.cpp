@@ -36,7 +36,7 @@ void extractInfoFile(Connection& con, string filename, string tablename, std::ve
 	while (std::getline(infile, data)) {
 		result.clear();
 		extractInfo(data, filter, '|', result);
-		con.Query("INSERT INTO " + tablename + " VALUES (" + result + ")");
+        con.Query("INSERT INTO " + tablename + " VALUES (" + result + ")");
 		data.clear();
 	}
 
@@ -49,7 +49,7 @@ void CreateGraphFromFile(Connection & con) {
 		con.Query("DROP TABLE " + table_names[i]);
 	}
 
-	con.Query("CREATE TABLE person(id STRING)");
+	con.Query("CREATE TABLE Person(id STRING)");
 	con.Query("CREATE TABLE Forum(id STRING, title STRING)");
 	con.Query("CREATE TABLE Post(id STRING)");
 	con.Query("CREATE TABLE Knows(id1 STRING, id2 STRING)");
@@ -57,9 +57,9 @@ void CreateGraphFromFile(Connection & con) {
 	con.Query("CREATE TABLE ContainerOf(forumId STRING, postId STRING)");
 	con.Query("CREATE TABLE HasCreator(postId STRING, personId STRING)");
 
-	string prepath = "/Users/louyk/Desktop/dbs/duckdb/resource/sf0.1/";
+	string prepath = "/Users/louyk/Desktop/dbs/duckdb/resource/sample/";
 
-	std::vector<bool> filter_person{true, false, false, false, false, false, false, false};
+	std::vector<bool> filter_person{true, false, false, false, false, false, false, false, false, false};
 	extractInfoFile(con, prepath + "person_0_0.csv", "Person", filter_person);
 
 	std::vector<bool> filter_forum{true, true, false};
@@ -81,14 +81,38 @@ void CreateGraphFromFile(Connection & con) {
 	extractInfoFile(con, prepath + "post_hasCreator_person_0_0.csv", "HasCreator", filter_hascreator);
 }
 
+void create_db_conn(DuckDB& db, Connection& con) {
+    con.DisableProfiling();
+    //con.context->transaction.SetAutoCommit(false);
+    //con.context->transaction.BeginTransaction();
+
+    // CreateGraph(con);
+    CreateGraphFromFile(con);
+
+    //con.context->transaction.Commit();
+}
+
 int main() {
+    int count_num = 50;
+    vector<string> constantval_list;
+    // getStringListFromFile("../../../resource/sample/person_0_0.csv", 0, count_num, constantval_list);
+    constantval_list.push_back("4398046511870");
+
 	DuckDB db(nullptr);
 	Connection con(db);
+    //create_db_conn(db, con);
 
-	CreateGraphFromFile(con);
+    for (int i = 0; i < constantval_list.size(); ++i) {
+        //con.context->transaction.SetAutoCommit(false);
+        //con.context->transaction.BeginTransaction();
 
-	auto roq = con.Query("SELECT f.title FROM "
-	                     "Knows k1, Person p2, HasMember hm, Forum f, ContainerOf cof, Post po, HasCreator hc "
-	                     "WHERE p2.id = k1.id2 AND p2.id = hm.personId AND f.id = hm.forumId AND f.id = cof.forumId AND "
-	                     "po.id = cof.postId AND po.id = hc.postId AND p2.id = hc.personId AND k1.id1 = \'4398046511628\'");
+        con.context->SetPbParameters(1, "output/query" + to_string(i) + ".log");
+        con.QueryPb("SELECT f.title FROM "
+                        "Knows k1, Person p2, HasMember hm, Forum f, ContainerOf cof, Post po, HasCreator hc "
+                        "WHERE p2.id = k1.id2 AND p2.id = hm.personId AND f.id = hm.forumId AND f.id = cof.forumId AND "
+                        "po.id = cof.postId AND po.id = hc.postId AND p2.id = hc.personId AND k1.id1 = \'"
+                        + constantval_list[i] + "\'");
+
+        //con.context->transaction.Commit();
+    }
 }

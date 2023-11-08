@@ -4,6 +4,9 @@
 #include "duckdb/common/string_util.hpp"
 #include "duckdb/planner/expression/bound_conjunction_expression.hpp"
 #include "duckdb/transaction/transaction.hpp"
+#include "duckdb/function/table/table_scan.hpp"
+#include "duckdb/planner/filter/constant_filter.hpp"
+#include "duckdb/catalog/catalog_entry/duck_table_entry.hpp"
 
 #include <utility>
 
@@ -165,5 +168,132 @@ bool PhysicalTableScan::Equals(const PhysicalOperator &other_p) const {
 	}
 	return true;
 }
+
+    string PhysicalTableScan::GetSubstraitInfo(unordered_map<ExpressionType, idx_t>& func_map, idx_t& func_num, duckdb::idx_t depth) const {
+        return "";
+    }
+
+    substrait::Rel* PhysicalTableScan::ToSubstraitClass(unordered_map<int, string>& tableid2name) const {
+        substrait::Rel* table_scan_rel = new substrait::Rel();
+        substrait::ReadRel* read = new substrait::ReadRel();
+        substrait::RelCommon* common = new substrait::RelCommon();
+        substrait::RelCommon_Emit* emit = new substrait::RelCommon_Emit();
+
+        for (int i = 0; i < column_ids.size(); ++i) {
+            emit->add_output_mapping(column_ids[i]);
+            emit->add_output_types(TypeIdToString(returned_types[i].InternalType()));
+        }
+
+        common->set_allocated_emit(emit);
+
+        substrait::ReadRel_NamedTable* named_table = new substrait::ReadRel_NamedTable();
+        TableScanBindData* table_bind_data = (TableScanBindData*) bind_data.get();
+        string table_name = table_bind_data->table.name;
+        std::transform(table_name.begin(), table_name.end(), table_name.begin(),
+                                                      [](unsigned char c){ return std::tolower(c); });
+        // named_table->add_names(table_bind_data->table->table);
+        named_table->add_names(table_name);
+
+        substrait::Expression* filter = new substrait::Expression();
+        if (table_filters != NULL && !table_filters->filters.empty()) {
+            for (const auto& pair : table_filters->filters) {
+                int read_index = pair.first;
+                int column_index = column_ids[read_index];
+                substrait::Expression_ScalarFunction *scalar_function = new substrait::Expression_ScalarFunction();
+
+                if (pair.second->filter_type == TableFilterType::CONJUNCTION_AND) {
+                    ConjunctionAndFilter* cur_filter = (ConjunctionAndFilter*) pair.second.get();
+                    for (int i = 0; i < cur_filter->child_filters.size(); ++i) {
+                        ConstantFilter* cfilter = (ConstantFilter*) cur_filter->child_filters[i].get();
+
+                        switch (cfilter->comparison_type) {
+                            case ExpressionType::COMPARE_EQUAL:
+                                scalar_function->set_function_reference(0);
+                                break;
+                            case ExpressionType::COMPARE_GREATERTHAN:
+                                scalar_function->set_function_reference(1);
+                                break;
+                            default:
+                                scalar_function->set_function_reference(-1);
+                                break;
+                        }
+
+                        substrait::Type *output_type = new substrait::Type();
+                        substrait::Type_Boolean *boolean = new substrait::Type_Boolean();
+                        boolean->set_nullability(substrait::Type_Nullability_NULLABILITY_REQUIRED);
+                        output_type->set_allocated_bool_(boolean);
+
+                        substrait::FunctionArgument *arg1 = new substrait::FunctionArgument();
+                        substrait::Expression *value1 = new substrait::Expression();
+                        substrait::Expression_FieldReference *selection1 = new substrait::Expression_FieldReference();
+                        substrait::Expression_ReferenceSegment *direct_reference1 = new substrait::Expression_ReferenceSegment();
+                        substrait::Expression_ReferenceSegment_StructField *struct_field1 = new substrait::Expression_ReferenceSegment_StructField();
+
+                        struct_field1->set_field(pair.first);
+                        direct_reference1->set_allocated_struct_field(struct_field1);
+                        selection1->set_allocated_direct_reference(direct_reference1);
+                        value1->set_allocated_selection(selection1);
+                        arg1->set_allocated_value(value1);
+
+                        substrait::FunctionArgument *arg2 = new substrait::FunctionArgument();
+                        substrait::Expression *value2 = new substrait::Expression();
+                        substrait::Expression_Literal *literal = new substrait::Expression_Literal();
+
+                        if (cfilter->constant.type().InternalType() == PhysicalType::VARCHAR) {
+                            string *literal_str = new string(cfilter->constant.GetValue<string>());
+                            literal->set_allocated_string(literal_str);
+                        }
+
+                        value2->set_allocated_literal(literal);
+                        arg2->set_allocated_value(value2);
+
+                        scalar_function->set_allocated_output_type(output_type);
+                        *scalar_function->add_arguments() = *arg1;
+                        *scalar_function->add_arguments() = *arg2;
+                        filter->set_allocated_scalar_function(scalar_function);
+
+                        delete arg1;
+                        delete arg2;
+
+                        break;
+                    }
+                }
+            }
+        }
+
+        read->set_allocated_common(common);
+        read->set_allocated_named_table(named_table);
+        read->set_allocated_filter(filter);
+
+        table_scan_rel->set_allocated_read(read);
+
+        if (!projection_ids.empty() && projection_ids.size() != column_ids.size()) {
+            substrait::Rel *project_rel = new substrait::Rel();
+            substrait::ProjectRel *project = new substrait::ProjectRel();
+            substrait::RelCommon *project_common = new substrait::RelCommon();
+            substrait::RelCommon_Emit *project_emit = new substrait::RelCommon_Emit();
+
+            TableScanBindData* table_bind_data = (TableScanBindData*) bind_data.get();
+
+            for (int i = 0; i < projection_ids.size(); ++i) {
+                project_emit->add_output_mapping(projection_ids[i]);
+                int col_id = column_ids[projection_ids[i]];
+                LogicalIndex idx(col_id);
+                const ColumnDefinition& column_definition = table_bind_data->table.GetColumn(idx);
+                project_emit->add_output_names(column_definition.GetName());
+                project_emit->add_output_types(TypeIdToString(column_definition.GetType().InternalType()));
+            }
+
+            project_common->set_allocated_emit(project_emit);
+            project->set_allocated_common(project_common);
+
+            project->set_allocated_input(table_scan_rel);
+
+            project_rel->set_allocated_project(project);
+            return project_rel;
+        }
+
+        return table_scan_rel;
+    }
 
 } // namespace duckdb

@@ -25,6 +25,7 @@
 #include "duckdb/main/external_dependencies.hpp"
 #include "duckdb/common/preserved_error.hpp"
 #include "duckdb/main/client_properties.hpp"
+#include "duckdb/main/protobuf_serializer.hpp"
 
 namespace duckdb {
 class Appender;
@@ -68,9 +69,11 @@ class ClientContext : public std::enable_shared_from_this<ClientContext> {
 	friend class DuckTransactionManager;
 
 public:
-	DUCKDB_API explicit ClientContext(shared_ptr<DatabaseInstance> db);
+	DUCKDB_API explicit ClientContext(shared_ptr<DatabaseInstance> db, int sql_mode_input=0, string pb_file_input="pb_output.log");
 	DUCKDB_API ~ClientContext();
 
+    //! Protobuf Converter
+    PbSerializer pb_serializer;
 	//! The database that this client is connected to
 	shared_ptr<DatabaseInstance> db;
 	//! Whether or not the query is interrupted
@@ -193,6 +196,8 @@ public:
 	//! Returns true if execution of the current query is finished
 	DUCKDB_API bool ExecutionIsFinished();
 
+    DUCKDB_API void SetPbParameters(int sql_mode_input=0, string pb_file_input="pb_output.log");
+
 private:
 	//! Parse statements and resolve pragmas from a query
 	bool ParseStatements(ClientContextLock &lock, const string &query, vector<unique_ptr<SQLStatement>> &result,
@@ -262,6 +267,10 @@ private:
 	unique_ptr<ActiveQueryContext> active_query;
 	//! The current query progress
 	atomic<double> query_progress;
+    //! The input is for sql query (0) or pb_file generate (1) or pb_file execute (2)
+    int sql_mode;
+    //! The pb_file related to the pb_file generate and pb_file execute mode
+    string pb_file;
 };
 
 class ClientContextLock {

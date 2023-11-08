@@ -276,6 +276,41 @@ string TypeIdToString(PhysicalType type) {
 }
 // LCOV_EXCL_STOP
 
+PhysicalType TypeIdFromString(string type) {
+    if (type == "BOOL")
+        return PhysicalType::BOOL;
+    else if (type == "INT8")
+        return PhysicalType::INT8;
+    else if (type == "INT16")
+        return PhysicalType::INT16;
+    else if (type == "INT32")
+        return PhysicalType::INT32;
+    else if (type == "INT64")
+        return PhysicalType::INT64;
+    else if (type == "UINT8")
+        return PhysicalType::UINT8;
+    else if (type == "UINT16")
+        return PhysicalType::UINT16;
+    else if (type == "UINT32")
+        return PhysicalType::UINT32;
+    else if (type == "UINT64")
+        return PhysicalType::UINT64;
+    else if (type == "INT128")
+        return PhysicalType::INT128;
+    else if (type == "FLOAt")
+        return PhysicalType::FLOAT;
+    else if (type == "DOUBLE")
+        return PhysicalType::DOUBLE;
+    else if (type == "VARCHAR")
+        return PhysicalType::VARCHAR;
+    else if (type == "STRUCT<?>")
+        return PhysicalType::STRUCT;
+    else if (type == "LIST<?>")
+        return PhysicalType::LIST;
+    else
+        throw ConversionException("Invalid TypeId in string format");
+}
+
 idx_t GetTypeIdSize(PhysicalType type) {
 	switch (type) {
 	case PhysicalType::BIT:

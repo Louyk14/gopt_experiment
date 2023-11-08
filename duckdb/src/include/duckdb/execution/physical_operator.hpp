@@ -18,6 +18,7 @@
 #include "duckdb/common/optional_idx.hpp"
 #include "duckdb/execution/physical_operator_states.hpp"
 #include "duckdb/common/enums/order_preservation_type.hpp"
+#include "duckdb/protocode/algebra.pb.h"
 
 namespace duckdb {
 class Event;
@@ -65,6 +66,19 @@ public:
 	virtual string ToString() const;
 	void Print() const;
 	virtual vector<const_reference<PhysicalOperator>> GetChildren() const;
+    virtual string GetSubstraitInfo(std::unordered_map<ExpressionType, idx_t>& func_map,
+                                    idx_t& func_num, idx_t depth = 0) const {
+        return "";
+    }
+    string AssignBlank(int depth) const {
+        return "";
+    };
+    string ToSubstrait() const {
+        return "";
+    };
+    virtual substrait::Rel* ToSubstraitClass(unordered_map<int, string>& tableid2name) const {
+        return new substrait::Rel();
+    }
 
 	//! Return a vector of the types that will be returned by this operator
 	const vector<LogicalType> &GetTypes() const {

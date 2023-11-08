@@ -172,7 +172,8 @@ BaseStatistics BaseStatistics::CreateEmptyType(LogicalType type) {
 	case StatisticsType::NUMERIC_STATS:
 		return NumericStats::CreateEmpty(std::move(type));
 	case StatisticsType::STRING_STATS:
-		return StringStats::CreateEmpty(std::move(type));
+        return StringStats::CreateUnknown(std::move(type));
+		// return StringStats::CreateEmpty(std::move(type));
 	case StatisticsType::LIST_STATS:
 		return ListStats::CreateEmpty(std::move(type));
 	case StatisticsType::STRUCT_STATS:

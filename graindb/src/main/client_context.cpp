@@ -243,11 +243,11 @@ unique_ptr<QueryResult> ClientContext::ExecutePreparedStatementFromPb(std::strin
 		names.push_back(to_string(i));
 	}
 
-	//auto result =
-	//    make_unique<MaterializedQueryResult>(StatementType::SELECT_STATEMENT, sql_types, physical_plan->types, names);
-
 	auto result =
-	        make_unique<MaterializedQueryResult>(StatementType::SELECT_STATEMENT);
+	    make_unique<MaterializedQueryResult>(StatementType::SELECT_STATEMENT, sql_types, physical_plan->types, names);
+
+	// auto result =
+	//        make_unique<MaterializedQueryResult>(StatementType::SELECT_STATEMENT);
 
 	std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds> start =
 	    std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now());

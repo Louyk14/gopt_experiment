@@ -1372,14 +1372,14 @@ int test_graindb_smergejoin_person_constrained_large(string constantval, int& rn
 	rai_info_hasmember_forum->left_cardinalities[0] = table_hasmember->storage->info->cardinality;
 	rai_info_hasmember_forum->compact_list = &rai_info_hasmember_forum->rai->alist->compact_forward_list; //e498
 
-	join_condition_hasmember_forum.rais.push_back(move(rai_info_hasmember_forum));
-	cond_hasmember_forum.push_back(move(join_condition_hasmember_forum));
+    join_condition_cof_forum.rais.push_back(move(rai_info_hasmember_forum));
+    cond_cof_forum.push_back(move(join_condition_cof_forum));
 
 	LogicalComparisonJoin join_hasmember_forum_op(JoinType::INNER);
 	vector<TypeId> output_types_hasmember_forum{TypeId::INT64, TypeId::INT64, TypeId::VARCHAR, TypeId::VARCHAR, TypeId::INT64};
 	join_hasmember_forum_op.types = output_types_hasmember_forum;
 	auto join_hasmember_forum = make_unique<PhysicalSIPJoin>(context, join_hasmember_forum_op, move(scan_function_hasmember),
-	                                                         move(scan_function_forum), move(cond_hasmember_forum), join_hasmember_forum_op.join_type,
+	                                                         move(scan_function_forum), move(cond_cof_forum), join_hasmember_forum_op.join_type,
 	                                                         left_projection_map, right_projection_map);
 
 	// join person2 with exisitng

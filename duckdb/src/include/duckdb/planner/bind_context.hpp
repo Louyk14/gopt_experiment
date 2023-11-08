@@ -17,6 +17,7 @@
 #include "duckdb/planner/expression.hpp"
 #include "duckdb/planner/expression_binder.hpp"
 #include "duckdb/planner/table_binding.hpp"
+#include "duckdb/catalog/standard_entry.hpp"
 
 namespace duckdb {
 class Binder;
@@ -132,6 +133,13 @@ public:
 	void SetCTEBindings(case_insensitive_map_t<std::shared_ptr<Binding>> bindings) {
 		cte_bindings = bindings;
 	}
+
+    void GetBindingsMap(unordered_map<int, string>& list) {
+        for (const auto& bind : bindings_list) {
+            StandardEntry* entry = (StandardEntry*) bind.get().GetStandardEntry().get();
+            list[bind.get().index] = entry->name;
+        }
+    }
 
 	//! Alias a set of column names for the specified table, using the original names if there are not enough aliases
 	//! specified.

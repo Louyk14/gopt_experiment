@@ -13,12 +13,16 @@ ColumnRefExpression::ColumnRefExpression() : ParsedExpression(ExpressionType::CO
 }
 
 ColumnRefExpression::ColumnRefExpression(string column_name, string table_name)
-    : ColumnRefExpression(table_name.empty() ? vector<string> {std::move(column_name)}
-                                             : vector<string> {std::move(table_name), std::move(column_name)}) {
+    : ColumnRefExpression(table_name.empty() ? vector<string>{std::move(column_name)}
+                                             : [](string col, string tab) {
+                                                    vector<string> input(1, std::move(col));
+                                                    input.push_back(tab);
+                                                    return input;
+                                                } (column_name, table_name)) {
 }
 
 ColumnRefExpression::ColumnRefExpression(string column_name)
-    : ColumnRefExpression(vector<string> {std::move(column_name)}) {
+    : ColumnRefExpression(vector<string>(1, std::move(column_name))) { //ColumnRefExpression(vector<string> {std::move(column_name)}) {
 }
 
 ColumnRefExpression::ColumnRefExpression(vector<string> column_names_p)

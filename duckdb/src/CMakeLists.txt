@@ -1,5 +1,7 @@
 add_definitions(-DDUCKDB)
 
+list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew/opt/protobuf@21/include;/opt/homebrew/opt/protobuf@21/lib")
+
 if(${DISABLE_THREADS})
   add_definitions(-DDUCKDB_NO_THREADS)
 endif()
@@ -64,6 +66,10 @@ else()
   add_subdirectory(storage)
   add_subdirectory(transaction)
   add_subdirectory(verification)
+  add_subdirectory(protocode)
+
+  find_package(Protobuf REQUIRED)
+  include_directories(${protobuf_INCLUDE_DIR})
 
   set(DUCKDB_LINK_LIBS
       ${DUCKDB_SYSTEM_LIBS}
@@ -77,12 +83,14 @@ else()
       duckdb_fastpforlib
       duckdb_mbedtls)
 
-  add_library(duckdb SHARED ${ALL_OBJECT_FILES} ../examples/embedded-c++/main.cpp)
+  add_library(duckdb SHARED ${ALL_OBJECT_FILES} ../examples/embedded-c++/main.cpp include/duckdb/main/protobuf_serializer.hpp main/protobuf_serializer.cpp)
+  target_link_libraries(duckdb ${Protobuf_LIBRARIES})
   target_link_libraries(duckdb ${DUCKDB_LINK_LIBS})
   link_threads(duckdb)
   link_extension_libraries(duckdb)
 
   add_library(duckdb_static STATIC ${ALL_OBJECT_FILES})
+  target_link_libraries(duckdb_static ${Protobuf_LIBRARIES})
   target_link_libraries(duckdb_static ${DUCKDB_LINK_LIBS})
   link_threads(duckdb_static)
   link_extension_libraries(duckdb_static)

@@ -91,6 +91,9 @@ public:
 	bool ParallelSink() const override {
 		return true;
 	}
+
+    string GetSubstraitInfo(unordered_map<ExpressionType, idx_t>& func_map, idx_t& func_num, duckdb::idx_t depth) const override;
+    substrait::Rel* ToSubstraitClass(unordered_map<int, string>& tableid2name) const override;
 };
 
 } // namespace duckdb

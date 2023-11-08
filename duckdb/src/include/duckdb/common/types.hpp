@@ -441,6 +441,7 @@ DUCKDB_API LogicalType TransformStringToLogicalType(const string &str, ClientCon
 extern const PhysicalType ROW_TYPE;
 
 DUCKDB_API string TypeIdToString(PhysicalType type);
+DUCKDB_API PhysicalType TypeIdFromString(string type);
 DUCKDB_API idx_t GetTypeIdSize(PhysicalType type);
 DUCKDB_API bool TypeIsConstantSize(PhysicalType type);
 DUCKDB_API bool TypeIsIntegral(PhysicalType type);

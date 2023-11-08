@@ -38,6 +38,9 @@ public:
 	CreateJoinProjection(vector<LogicalType> proj_types, const vector<LogicalType> &lhs_types,
 	                     const vector<LogicalType> &rhs_types, const vector<idx_t> &left_projection_map,
 	                     const vector<idx_t> &right_projection_map, const idx_t estimated_cardinality);
+    string GetSubstraitInfo(unordered_map<ExpressionType, idx_t>& func_map,idx_t& func_num, idx_t depth = 0) const override;
+    substrait::Rel* ToSubstraitClass(unordered_map<int, string>& tableid2name) const override;
+
 };
 
 } // namespace duckdb

@@ -71,6 +71,9 @@ public:
 	}
 
 	double GetProgress(ClientContext &context, GlobalSourceState &gstate) const override;
+
+    string GetSubstraitInfo(unordered_map<ExpressionType, idx_t>& func_map, idx_t& func_num, idx_t depth = 0) const override;
+    substrait::Rel* ToSubstraitClass(unordered_map<int, string>& tableid2name) const override;
 };
 
 } // namespace duckdb

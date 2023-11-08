@@ -73,8 +73,12 @@ unique_ptr<QueryResult> Connection::SendQuery(const string &query) {
 
 unique_ptr<MaterializedQueryResult> Connection::Query(const string &query) {
 	auto result = context->Query(query, false);
-	D_ASSERT(result->type == QueryResultType::MATERIALIZED_RESULT);
+    D_ASSERT(result->type == QueryResultType::MATERIALIZED_RESULT);
 	return unique_ptr_cast<QueryResult, MaterializedQueryResult>(std::move(result));
+}
+
+void Connection::QueryPb(const string &query) {
+    context->Query(query, false);
 }
 
 DUCKDB_API string Connection::GetSubstrait(const string &query) {
