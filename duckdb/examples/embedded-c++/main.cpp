@@ -3,6 +3,49 @@
 
 using namespace duckdb;
 
+void getStringListFromFile(string filename, int index, int count, vector<string>& slist) {
+    std::fstream infile(filename, std::ios::in);
+    string schema, data;
+    std::getline(infile, schema);
+    std::cout << schema << std::endl;
+    char delimiter = '|';
+
+    unordered_set<string> record;
+
+    string result = "";
+    while (std::getline(infile, data)) {
+        int pos = 0;
+        int last = 0;
+        int indexer = 0;
+
+        while ((pos = data.find(delimiter, last)) != std::string::npos) {
+            if (index == indexer) {
+                string token = data.substr(last, pos - last);
+                if (record.find(token) == record.end()) {
+                    slist.push_back(token);
+                    record.insert(token);
+                }
+                break;
+            }
+            indexer += 1;
+            last = pos + 1;
+        }
+        if (index == indexer) {
+            string token = data.substr(last, pos - last);
+            if (record.find(token) == record.end()) {
+                slist.push_back(token);
+                record.insert(token);
+            }
+        }
+
+        if (slist.size() >= count)
+            break;
+    }
+
+    infile.close();
+}
+
+
 void extractInfo(string& inputstr, std::vector<bool>& filter, char delimiter, string& result) {
 	int pos = 0;
 	int last = 0;
