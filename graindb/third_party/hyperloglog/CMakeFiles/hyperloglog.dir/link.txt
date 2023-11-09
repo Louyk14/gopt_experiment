@@ -1,0 +1,2 @@
+/bin/ar qc libhyperloglog.a  CMakeFiles/hyperloglog.dir/hyperloglog.cpp.o CMakeFiles/hyperloglog.dir/sds.cpp.o
+/bin/ranlib libhyperloglog.a

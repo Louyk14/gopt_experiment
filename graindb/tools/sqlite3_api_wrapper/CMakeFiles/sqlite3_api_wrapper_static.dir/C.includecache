@@ -1,0 +1,22 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/admin/louyunkai.lyk/gopt/gopt_experiment/graindb/tools/sqlite3_api_wrapper/printf.c
+stdint.h
+-
+stdarg.h
+-
+stdlib.h
+-
+string.h
+-
+math.h
+-
+assert.h
+-
+

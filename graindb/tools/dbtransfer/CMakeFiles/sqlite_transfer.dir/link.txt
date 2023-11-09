@@ -1,0 +1,2 @@
+/bin/ar qc libsqlite_transfer.a  CMakeFiles/sqlite_transfer.dir/sqlite_transfer.cpp.o
+/bin/ranlib libsqlite_transfer.a

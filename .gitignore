@@ -4,3 +4,4 @@ graindb/cmake-build-release/
 duckdb/cmake-build-debug/
 duckdb/cmake-build-release/
 
+graindb/third_party/sqllogictest

@@ -131,8 +131,8 @@ void CreateGraphFromFile(Connection & con) {
 	con.Query("CREATE TABLE ContainerOf(forumId STRING, postId STRING)");
 	con.Query("CREATE TABLE HasCreator(postId STRING, personId STRING)");
 
-    string prepath = "/Users/louyk/Desktop/dbs/duckdb/resource/sample/";
-	// string prepath = "../../../resource/sample/";
+    	// string prepath = "/Users/louyk/Desktop/dbs/duckdb/resource/sample/";
+	string prepath = "../../../../dataset/ldbc/sf1/";
 
 	vector<bool> filter_person{true, false, false, false, false, false, false, false, false, false};
 	extractInfoFile(con, prepath + "person_0_0.csv", "Person", filter_person);
@@ -245,8 +245,8 @@ int main() {
 
 	int count_num = 50;
 	vector<string> constantval_list;
-	// getStringListFromFile("../../../resource/sample/person_0_0.csv", 0, count_num, constantval_list);
-	constantval_list.push_back("4398046511870");
+	getStringListFromFile("../../../../dataset/ldbc/sf1/person_0_0.csv", 0, count_num, constantval_list);
+	// constantval_list.push_back("4398046511870");
 
 
 	vector<vector<int>> results(6, vector<int>());
@@ -258,7 +258,7 @@ int main() {
 		con.context->transaction.SetAutoCommit(false);
 		con.context->transaction.BeginTransaction();
 
-        con.context->SetPbParameters(2, "output.log");
+        	con.context->SetPbParameters(2, "output/sf1/duckdb/" + to_string(i) + ".log");
 		// con.context->SetPbParameters(0, "output/query" + to_string(i) + ".log");
 		auto result =
 		    con.Query("SELECT f.title FROM "

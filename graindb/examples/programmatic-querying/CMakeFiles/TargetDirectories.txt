@@ -1,0 +1,3 @@
+/home/admin/louyunkai.lyk/gopt/gopt_experiment/graindb/examples/programmatic-querying/CMakeFiles/rebuild_cache.dir
+/home/admin/louyunkai.lyk/gopt/gopt_experiment/graindb/examples/programmatic-querying/CMakeFiles/edit_cache.dir
+/home/admin/louyunkai.lyk/gopt/gopt_experiment/graindb/examples/programmatic-querying/CMakeFiles/programmating_querying_example.dir

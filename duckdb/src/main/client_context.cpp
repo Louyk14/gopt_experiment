@@ -357,7 +357,7 @@ ClientContext::CreatePreparedStatement(ClientContextLock &lock, const string &qu
 		// std::cout << physical_plan->ToString() << std::endl;
         unordered_map<int, string> tableid2name;
         planner.binder->bind_context.GetBindingsMap(tableid2name);
-        string pb_file = "output.log";
+        // string pb_file = "output.log";
         pb_serializer.SerializeToFile(pb_file, physical_plan.get(), tableid2name);
 	}
 #ifdef DEBUG
@@ -829,7 +829,8 @@ unique_ptr<QueryResult> ClientContext::Query(const string &query, bool allow_str
 		auto pending_query = PendingQueryInternal(*lock, std::move(statement), parameters);
 		auto has_result = pending_query->properties.return_type == StatementReturnType::QUERY_RESULT;
 
-        if (sql_mode == 1) {
+        // std::cout << "come here" << std::endl;
+	if (sql_mode == 1) {
             return result;
         }
 

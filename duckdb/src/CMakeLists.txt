@@ -83,7 +83,7 @@ else()
       duckdb_fastpforlib
       duckdb_mbedtls)
 
-  add_library(duckdb SHARED ${ALL_OBJECT_FILES} ../examples/embedded-c++/main.cpp include/duckdb/main/protobuf_serializer.hpp main/protobuf_serializer.cpp)
+  add_library(duckdb SHARED ${ALL_OBJECT_FILES} ../examples/embedded-c++/main.cpp)
   target_link_libraries(duckdb ${Protobuf_LIBRARIES})
   target_link_libraries(duckdb ${DUCKDB_LINK_LIBS})
   link_threads(duckdb)

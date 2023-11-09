@@ -5,6 +5,9 @@ using namespace duckdb;
 
 void getStringListFromFile(string filename, int index, int count, vector<string>& slist) {
     std::fstream infile(filename, std::ios::in);
+    if (!infile)
+	std::cout << filename << " not found" <<  std::endl;
+
     string schema, data;
     std::getline(infile, schema);
     std::cout << schema << std::endl;
@@ -100,7 +103,8 @@ void CreateGraphFromFile(Connection & con) {
 	con.Query("CREATE TABLE ContainerOf(forumId STRING, postId STRING)");
 	con.Query("CREATE TABLE HasCreator(postId STRING, personId STRING)");
 
-	string prepath = "/Users/louyk/Desktop/dbs/duckdb/resource/sample/";
+	// string prepath = "/Users/louyk/Desktop/dbs/duckdb/resource/sample/";
+	string prepath = "../../../../dataset/ldbc/sf1/";
 
 	std::vector<bool> filter_person{true, false, false, false, false, false, false, false, false, false};
 	extractInfoFile(con, prepath + "person_0_0.csv", "Person", filter_person);
@@ -138,18 +142,19 @@ void create_db_conn(DuckDB& db, Connection& con) {
 int main() {
     int count_num = 50;
     vector<string> constantval_list;
-    // getStringListFromFile("../../../resource/sample/person_0_0.csv", 0, count_num, constantval_list);
-    constantval_list.push_back("4398046511870");
+    getStringListFromFile("../../../../dataset/ldbc/sf1/person_0_0.csv", 0, count_num, constantval_list);
+    // constantval_list.push_back("4398046511870");
 
+	std::cout << "Finish Reading" << " " << constantval_list.size() << std::endl;
 	DuckDB db(nullptr);
 	Connection con(db);
-    //create_db_conn(db, con);
+   create_db_conn(db, con);
 
     for (int i = 0; i < constantval_list.size(); ++i) {
         //con.context->transaction.SetAutoCommit(false);
         //con.context->transaction.BeginTransaction();
-
-        con.context->SetPbParameters(1, "output/query" + to_string(i) + ".log");
+	// std::cout << i << std::endl;
+        con.context->SetPbParameters(1, "output/sf1/duckdb/query" + to_string(i) + ".log");
         con.QueryPb("SELECT f.title FROM "
                         "Knows k1, Person p2, HasMember hm, Forum f, ContainerOf cof, Post po, HasCreator hc "
                         "WHERE p2.id = k1.id2 AND p2.id = hm.personId AND f.id = hm.forumId AND f.id = cof.forumId AND "

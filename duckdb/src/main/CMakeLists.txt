@@ -32,6 +32,7 @@ add_library_unity(
   pending_query_result.cpp
   prepared_statement.cpp
   prepared_statement_data.cpp
+  protobuf_serializer.cpp
   relation.cpp
   query_profiler.cpp
   query_result.cpp

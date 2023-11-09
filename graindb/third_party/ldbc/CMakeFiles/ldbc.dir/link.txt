@@ -1,0 +1,2 @@
+/bin/ar qc libldbc.a  CMakeFiles/ldbc.dir/ldbc.cpp.o
+/bin/ranlib libldbc.a
