@@ -1,5 +1,6 @@
 #include "duckdb.hpp"
 #include <fstream>
+#include <chrono>
 
 using namespace duckdb;
 
@@ -139,27 +140,90 @@ void create_db_conn(DuckDB& db, Connection& con) {
     //con.context->transaction.Commit();
 }
 
+void replace_all(std::string& str, const std::string& from, const std::string& to) {
+    if(from.empty())
+        return;
+    int start_pos = 0;
+    while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
+    }
+}
+
+void generate_queries(string query_path, string para_path, std::vector<string>& generated_queries) {
+    std::ifstream para_file(para_path, std::ios::in);
+
+    string schema, data;
+    std::getline(para_file, schema);
+    std::cout << schema << std::endl;
+    char delimiter = '|';
+    std::vector<string> slots;
+
+    schema += delimiter;
+    string cur = "";
+    for (int i = 0; i < schema.size(); ++i) {
+        if (schema[i] == delimiter) {
+            cur = ":" + cur;
+            slots.push_back(cur);
+            cur.clear();
+        }
+        else {
+            cur += schema[i];
+        }
+    }
+
+    std::ifstream query_file(query_path, std::ios::in);
+    std::stringstream buffer;
+    buffer << query_file.rdbuf();
+    string query_template(buffer.str());
+    replace_all(query_template, "\n", " ");
+    
+    while (std::getline(para_file, data)) {
+        int pos = 0;
+        int last = 0;
+        int indexer = 0;
+        data += "|";
+
+        string query_template_tmp(query_template);
+        while ((pos = data.find(delimiter, last)) != std::string::npos) {
+            string token = data.substr(last, pos - last);
+            replace_all(query_template_tmp, slots[indexer], token);
+            indexer += 1;
+            last = pos + 1;
+        }
+
+        generated_queries.push_back(query_template_tmp);
+    }
+}
+
 int main() {
     int count_num = 50;
-    vector<string> constantval_list;
-    getStringListFromFile("../../../../dataset/ldbc/sf1/person_0_0.csv", 0, count_num, constantval_list);
+    // vector<string> constantval_list;
+    // getStringListFromFile("../../../../dataset/ldbc/sf1/person_0_0.csv", 0, count_num, constantval_list);
     // constantval_list.push_back("4398046511870");
 
-	std::cout << "Finish Reading" << " " << constantval_list.size() << std::endl;
-	DuckDB db(nullptr);
-	Connection con(db);
-   create_db_conn(db, con);
+    vector<string> generated_queries;
+    string query_path = "../../../../dataset/ldbc/query/queries/interactive-complex-1.sql";
+    string para_path = "../../../../dataset/ldbc/query/paras/ic1.param";
+    generate_queries(query_path, para_path, generated_queries);
 
-    for (int i = 0; i < constantval_list.size(); ++i) {
+    std::cout << "Generate Queries Over" << std::endl;
+
+    DuckDB db(nullptr);
+    Connection con(db);
+    create_db_conn(db, con);
+
+    for (int i = 0; i < generated_queries.size(); ++i) {
         //con.context->transaction.SetAutoCommit(false);
         //con.context->transaction.BeginTransaction();
 	// std::cout << i << std::endl;
-        con.context->SetPbParameters(1, "output/sf1/duckdb/query" + to_string(i) + ".log");
-        con.QueryPb("SELECT f.title FROM "
-                        "Knows k1, Person p2, HasMember hm, Forum f, ContainerOf cof, Post po, HasCreator hc "
-                        "WHERE p2.id = k1.id2 AND p2.id = hm.personId AND f.id = hm.forumId AND f.id = cof.forumId AND "
-                        "po.id = cof.postId AND po.id = hc.postId AND p2.id = hc.personId AND k1.id1 = \'"
-                        + constantval_list[i] + "\'");
+        con.context->SetPbParameters(1, "../../../../output/sf1/duckdb/query" + to_string(i) + ".log");
+        con.QueryPb(generated_queries[i]);
+        // con.QueryPb("SELECT f.title FROM "
+        //                "Knows k1, Person p2, HasMember hm, Forum f, ContainerOf cof, Post po, HasCreator hc "
+        //                "WHERE p2.id = k1.id2 AND p2.id = hm.personId AND f.id = hm.forumId AND f.id = cof.forumId AND "
+        //                "po.id = cof.postId AND po.id = hc.postId AND p2.id = hc.personId AND k1.id1 = \'"
+        //                + constantval_list[i] + "\'");
 
         //con.context->transaction.Commit();
     }

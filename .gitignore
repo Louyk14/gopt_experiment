@@ -3,7 +3,12 @@ graindb/cmake-build-debug/
 graindb/cmake-build-release/
 duckdb/cmake-build-debug/
 duckdb/cmake-build-release/
+.ossutil_checkpoint/
 
+*.cmake
+**/CMakeFiles/
+*.a
+*.so
 graindb/third_party/sqllogictest
 
 *.a

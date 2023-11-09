@@ -258,7 +258,7 @@ int main() {
 		con.context->transaction.SetAutoCommit(false);
 		con.context->transaction.BeginTransaction();
 
-        	con.context->SetPbParameters(2, "output/sf1/duckdb/" + to_string(i) + ".log");
+        	con.context->SetPbParameters(2, "../../../../output/sf1/duckdb/query" + to_string(i) + ".log");
 		// con.context->SetPbParameters(0, "output/query" + to_string(i) + ".log");
 		auto result =
 		    con.Query("SELECT f.title FROM "
