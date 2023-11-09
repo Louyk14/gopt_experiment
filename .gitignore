@@ -5,3 +5,10 @@ duckdb/cmake-build-debug/
 duckdb/cmake-build-release/
 
 graindb/third_party/sqllogictest
+
+*.a
+*.o
+*.so
+*.cmake
+**/CMakeFiles/
+**/CMakeCache.txt
